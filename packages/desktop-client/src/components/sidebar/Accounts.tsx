@@ -1,6 +1,15 @@
 // @ts-strict-ignore
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
+import { useMatch } from 'react-router-dom';
+
+import {
+  CreditCardIcon,
+  CrossIcon,
+  PlusIcon,
+  PowerIcon,
+  PowerOffIcon,
+} from 'lucide-react';
 
 import * as queries from 'loot-core/src/client/queries';
 import { type State } from 'loot-core/src/client/state-types';
@@ -11,12 +20,16 @@ import { useFailedAccounts } from '../../hooks/useFailedAccounts';
 import { useLocalPref } from '../../hooks/useLocalPref';
 import { useOffBudgetAccounts } from '../../hooks/useOffBudgetAccounts';
 import { useUpdatedAccounts } from '../../hooks/useUpdatedAccounts';
-import { SvgAdd } from '../../icons/v1';
-import { View } from '../common/View';
 import { type OnDropCallback } from '../sort';
 
 import { Account } from './Account';
-import { SecondaryItem } from './SecondaryItem';
+
+import { Item } from '@/components/sidebar/Item';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 const fontWeight = 600;
 
@@ -40,6 +53,7 @@ export function Accounts({
   const syncingAccountIds = useSelector(
     (state: State) => state.account.accountsSyncing,
   );
+  const match = useMatch({ path: '/accounts/*' });
 
   const getAccountPath = account => `/accounts/${account.id}`;
 
@@ -60,97 +74,102 @@ export function Accounts({
   };
 
   return (
-    <View>
-      <Account
-        name="All accounts"
-        to="/accounts"
-        query={queries.allAccountBalance()}
-        style={{ fontWeight, marginTop: 15 }}
-      />
-
-      {budgetedAccounts.length > 0 && (
+    <Collapsible open={!!match}>
+      <CollapsibleTrigger asChild>
         <Account
-          name="For budget"
-          to="/accounts/budgeted"
-          query={queries.budgetedAccountBalance()}
-          style={{ fontWeight, marginTop: 13 }}
+          name="Accounts"
+          to="/accounts"
+          Icon={CreditCardIcon}
+          query={queries.allAccountBalance()}
         />
-      )}
+      </CollapsibleTrigger>
 
-      {budgetedAccounts.map((account, i) => (
-        <Account
-          key={account.id}
-          name={account.name}
-          account={account}
-          connected={!!account.bank}
-          pending={syncingAccountIds.includes(account.id)}
-          failed={failedAccounts && failedAccounts.has(account.id)}
-          updated={updatedAccounts && updatedAccounts.includes(account.id)}
-          to={getAccountPath(account)}
-          query={queries.accountBalance(account)}
-          onDragChange={onDragChange}
-          onDrop={onReorder}
-          outerStyle={makeDropPadding(i)}
-        />
-      ))}
+      <CollapsibleContent className="mb-4">
+        {budgetedAccounts.length > 0 && (
+          <div className="my-4">
+            <Account
+              name="Budgeted accounts"
+              to="/accounts/budgeted"
+              query={queries.budgetedAccountBalance()}
+              Icon={PowerIcon}
+            />
+            {budgetedAccounts.map((account, i) => (
+              <Account
+                key={account.id}
+                name={account.name}
+                account={account}
+                connected={!!account.bank}
+                pending={syncingAccountIds.includes(account.id)}
+                failed={failedAccounts && failedAccounts.has(account.id)}
+                updated={
+                  updatedAccounts && updatedAccounts.includes(account.id)
+                }
+                to={getAccountPath(account)}
+                query={queries.accountBalance(account)}
+                onDragChange={onDragChange}
+                onDrop={onReorder}
+                outerStyle={makeDropPadding(i)}
+              />
+            ))}
+          </div>
+        )}
 
-      {offbudgetAccounts.length > 0 && (
-        <Account
-          name="Off budget"
-          to="/accounts/offbudget"
-          query={queries.offbudgetAccountBalance()}
-          style={{ fontWeight, marginTop: 13 }}
-        />
-      )}
+        {offbudgetAccounts.length > 0 && (
+          <div className="my-4">
+            <Account
+              name="Off budget"
+              to="/accounts/offbudget"
+              query={queries.offbudgetAccountBalance()}
+              Icon={PowerOffIcon}
+            />
+            {offbudgetAccounts.map((account, i) => (
+              <Account
+                key={account.id}
+                name={account.name}
+                account={account}
+                connected={!!account.bank}
+                pending={syncingAccountIds.includes(account.id)}
+                failed={failedAccounts && failedAccounts.has(account.id)}
+                updated={
+                  updatedAccounts && updatedAccounts.includes(account.id)
+                }
+                to={getAccountPath(account)}
+                query={queries.accountBalance(account)}
+                onDragChange={onDragChange}
+                onDrop={onReorder}
+                outerStyle={makeDropPadding(i)}
+              />
+            ))}
+          </div>
+        )}
 
-      {offbudgetAccounts.map((account, i) => (
-        <Account
-          key={account.id}
-          name={account.name}
-          account={account}
-          connected={!!account.bank}
-          pending={syncingAccountIds.includes(account.id)}
-          failed={failedAccounts && failedAccounts.has(account.id)}
-          updated={updatedAccounts && updatedAccounts.includes(account.id)}
-          to={getAccountPath(account)}
-          query={queries.accountBalance(account)}
-          onDragChange={onDragChange}
-          onDrop={onReorder}
-          outerStyle={makeDropPadding(i)}
-        />
-      ))}
+        {closedAccounts.length > 0 && (
+          <Collapsible open={showClosedAccounts}>
+            <CollapsibleTrigger asChild>
+              <Item
+                title={'Closed accounts' + (showClosedAccounts ? '' : '...')}
+                onClick={onToggleClosedAccounts}
+                Icon={CrossIcon}
+              />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="my-4">
+              {closedAccounts.map(account => (
+                <Account
+                  key={account.id}
+                  name={account.name}
+                  account={account}
+                  to={getAccountPath(account)}
+                  query={queries.accountBalance(account)}
+                  onDragChange={onDragChange}
+                  onDrop={onReorder}
+                />
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
+        )}
 
-      {closedAccounts.length > 0 && (
-        <SecondaryItem
-          style={{ marginTop: 15 }}
-          title={'Closed accounts' + (showClosedAccounts ? '' : '...')}
-          onClick={onToggleClosedAccounts}
-          bold
-        />
-      )}
-
-      {showClosedAccounts &&
-        closedAccounts.map(account => (
-          <Account
-            key={account.id}
-            name={account.name}
-            account={account}
-            to={getAccountPath(account)}
-            query={queries.accountBalance(account)}
-            onDragChange={onDragChange}
-            onDrop={onReorder}
-          />
-        ))}
-
-      <SecondaryItem
-        style={{
-          marginTop: 15,
-          marginBottom: 9,
-        }}
-        onClick={onAddAccount}
-        Icon={SvgAdd}
-        title="Add account"
-      />
-    </View>
+        <Item onClick={onAddAccount} Icon={PlusIcon} title="Add account" />
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

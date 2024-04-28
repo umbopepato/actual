@@ -7,6 +7,7 @@ import {
 } from 'react-error-boundary';
 import { HotkeysProvider } from 'react-hotkeys-hook';
 import { useDispatch, useSelector } from 'react-redux';
+import '../style/global.css';
 
 import {
   closeBudget,
@@ -35,6 +36,8 @@ import { FinancesApp } from './FinancesApp';
 import { ManagementApp } from './manager/ManagementApp';
 import { MobileWebMessage } from './mobile/MobileWebMessage';
 import { UpdateNotification } from './UpdateNotification';
+
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 type AppInnerProps = {
   budgetId: string;
@@ -175,26 +178,28 @@ export function App() {
   return (
     <HotkeysProvider initiallyActiveScopes={['*']}>
       <ResponsiveProvider>
-        <View
-          style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-        >
+        <TooltipProvider>
           <View
-            key={hiddenScrollbars ? 'hidden-scrollbars' : 'scrollbars'}
-            style={{
-              flexGrow: 1,
-              overflow: 'hidden',
-              ...styles.lightScrollbar,
-            }}
+            style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
           >
-            <ErrorBoundary FallbackComponent={ErrorFallback}>
-              {process.env.REACT_APP_REVIEW_ID && !Platform.isPlaywright && (
-                <DevelopmentTopBar />
-              )}
-              <AppInner budgetId={budgetId} cloudFileId={cloudFileId} />
-            </ErrorBoundary>
-            <ThemeStyle />
+            <View
+              key={hiddenScrollbars ? 'hidden-scrollbars' : 'scrollbars'}
+              style={{
+                flexGrow: 1,
+                overflow: 'hidden',
+                ...styles.lightScrollbar,
+              }}
+            >
+              <ErrorBoundary FallbackComponent={ErrorFallback}>
+                {process.env.REACT_APP_REVIEW_ID && !Platform.isPlaywright && (
+                  <DevelopmentTopBar />
+                )}
+                <AppInner budgetId={budgetId} cloudFileId={cloudFileId} />
+              </ErrorBoundary>
+              <ThemeStyle />
+            </View>
           </View>
-        </View>
+        </TooltipProvider>
       </ResponsiveProvider>
     </HotkeysProvider>
   );

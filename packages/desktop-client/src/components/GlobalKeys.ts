@@ -15,13 +15,13 @@ export function GlobalKeys() {
       if (e.metaKey) {
         switch (e.key) {
           case '1':
-            navigate('/budget');
+            navigate('/dashboard');
             break;
           case '2':
-            navigate('/reports');
+            navigate('/accounts');
             break;
           case '3':
-            navigate('/accounts');
+            navigate('/budget');
             break;
           case ',':
             if (Platform.OS === 'mac') {

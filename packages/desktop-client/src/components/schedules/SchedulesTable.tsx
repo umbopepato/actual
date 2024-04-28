@@ -40,7 +40,18 @@ type SchedulesTableProps = {
 };
 
 type CompletedScheduleItem = { id: 'show-completed' };
-type SchedulesTableItem = ScheduleEntity | CompletedScheduleItem;
+type SubTotalScheduleItem = {
+  id: `subtotal-${string}`;
+  title: string;
+  income: number;
+  expenses: number;
+};
+type TotalScheduleItem = { id: 'total' };
+type SchedulesTableItem =
+  | ScheduleEntity
+  | CompletedScheduleItem
+  | SubTotalScheduleItem
+  | TotalScheduleItem;
 
 export type ScheduleItemAction =
   | 'post-transaction'
@@ -129,15 +140,53 @@ function OverflowMenu({
   );
 }
 
+export function FormattedAmount({
+  amount,
+  isApprox,
+  ellipsize = false,
+  highlightExpense = false,
+}: {
+  amount: number;
+  isApprox?: boolean;
+  ellipsize?: boolean;
+  highlightExpense?: boolean;
+}) {
+  const str = integerToCurrency(Math.abs(amount || 0));
+  return (
+    <Text
+      style={{
+        flex: 1,
+        color:
+          amount > 0
+            ? theme.noticeTextLight
+            : highlightExpense
+              ? theme.errorText
+              : theme.tableText,
+        ...(ellipsize
+          ? {
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }
+          : {}),
+      }}
+      title={(isApprox ? 'Approximately ' : '') + str}
+    >
+      <PrivacyFilter>
+        {amount > 0 ? `+${str}` : `${highlightExpense ? '-' : ''}${str}`}
+      </PrivacyFilter>
+    </Text>
+  );
+}
+
 export function ScheduleAmountCell({
   amount,
   op,
 }: {
   amount: ScheduleEntity['_amount'];
-  op: ScheduleEntity['_amountOp'];
+  op?: ScheduleEntity['_amountOp'];
 }) {
   const num = getScheduledAmount(amount);
-  const str = integerToCurrency(Math.abs(num || 0));
   const isApprox = op === 'isapprox' || op === 'isbetween';
 
   return (
@@ -160,26 +209,54 @@ export function ScheduleAmountCell({
             lineHeight: '1em',
             marginRight: 10,
           }}
-          title={(isApprox ? 'Approximately ' : '') + str}
+          title={isApprox ? 'Approximately ' : ''}
         >
           ~
         </View>
       )}
-      <Text
-        style={{
-          flex: 1,
-          color: num > 0 ? theme.noticeTextLight : theme.tableText,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-        }}
-        title={(isApprox ? 'Approximately ' : '') + str}
-      >
-        <PrivacyFilter>{num > 0 ? `+${str}` : `${str}`}</PrivacyFilter>
-      </Text>
+      <FormattedAmount amount={num} isApprox={isApprox} ellipsize />
     </Cell>
   );
 }
+
+type Frequency = ScheduleEntity['_date']['frequency'];
+
+type SchedulesByFrequency = Partial<
+  Record<Frequency, Record<number, ScheduleEntity[]>>
+> & {
+  once?: ScheduleEntity[];
+};
+
+const calculateTotal = (schedules: ScheduleEntity[]) =>
+  schedules.reduce(
+    (total, schedule) => total + getScheduledAmount(schedule._amount),
+    0,
+  );
+
+const notCompleted = s => !s.completed;
+
+const isSubTotalItem = (
+  item: SchedulesTableItem,
+): item is SubTotalScheduleItem => {
+  return item.id.startsWith('subtotal');
+};
+
+const frequencyNouns: Record<Frequency, string> = {
+  daily: 'day',
+  weekly: 'week',
+  monthly: 'month',
+  yearly: 'year',
+};
+
+const formatRecurrence = (frequency: Frequency, interval: number) => {
+  return [
+    'Every',
+    interval !== 1 && interval,
+    frequencyNouns[frequency] + (interval !== 1 ? 's' : ''),
+  ]
+    .filter(Boolean)
+    .join(' ');
+};
 
 export function SchedulesTable({
   schedules,
@@ -197,10 +274,22 @@ export function SchedulesTable({
 
   const payees = usePayees();
   const accounts = useAccounts();
+  const hasCompletedSchedules = useMemo(
+    () => schedules.some(s => s.completed),
+    [schedules],
+  );
 
-  const filteredSchedules = useMemo(() => {
+  const filteredSchedules = useMemo(
+    () =>
+      allowCompleted && showCompleted
+        ? schedules
+        : schedules.filter(notCompleted),
+    [schedules, allowCompleted, showCompleted],
+  );
+
+  const searchedSchedules = useMemo(() => {
     if (!filter) {
-      return schedules;
+      return filteredSchedules;
     }
     const filterIncludes = (str: string) =>
       str
@@ -208,7 +297,7 @@ export function SchedulesTable({
           filter.toLowerCase().includes(str.toLowerCase())
         : false;
 
-    return schedules.filter(schedule => {
+    return filteredSchedules.filter(schedule => {
       const payee = payees.find(p => schedule._payee === p.id);
       const account = accounts.find(a => schedule._account === a.id);
       const amount = getScheduledAmount(schedule._amount);
@@ -231,24 +320,74 @@ export function SchedulesTable({
         filterIncludes(dateStr)
       );
     });
-  }, [payees, accounts, schedules, filter, statuses]);
+  }, [payees, accounts, filteredSchedules, filter, statuses]);
+
+  const groupedSchedules = useMemo(
+    () =>
+      searchedSchedules.reduce<SchedulesByFrequency>((groups, schedule) => {
+        if (schedule._date?.frequency) {
+          const group = (groups[schedule._date.frequency] =
+            groups[schedule._date.frequency] ?? {});
+          const interval = (group[schedule._date.interval ?? 1] =
+            group[schedule._date.interval ?? 1] ?? []);
+          interval.push(schedule);
+        } else {
+          (groups.once = groups.once ?? []).push(schedule);
+        }
+        return groups;
+      }, {}),
+    [searchedSchedules],
+  );
 
   const items: SchedulesTableItem[] = useMemo(() => {
-    const unCompletedSchedules = filteredSchedules.filter(s => !s.completed);
+    const _items = [];
 
-    if (!allowCompleted) {
-      return unCompletedSchedules;
+    if (groupedSchedules.once?.length) {
+      _items.push({
+        id: 'subtotal-once',
+        title: 'One-time',
+        income: calculateTotal(
+          groupedSchedules.once.filter(s => getScheduledAmount(s._amount) > 0),
+        ),
+        expenses: calculateTotal(
+          groupedSchedules.once.filter(s => getScheduledAmount(s._amount) < 0),
+        ),
+      });
+      _items.push(...groupedSchedules.once);
     }
-    if (showCompleted) {
-      return filteredSchedules;
+
+    (['daily', 'weekly', 'monthly', 'yearly'] as const).forEach(frequency => {
+      if (groupedSchedules[frequency]) {
+        Object.entries(groupedSchedules[frequency]).forEach(
+          ([interval, intervalSchedules]) => {
+            if (intervalSchedules?.length) {
+              _items.push({
+                id: `subtotal-${frequency}-${interval}`,
+                title: formatRecurrence(frequency, +interval),
+                income: calculateTotal(
+                  intervalSchedules.filter(
+                    s => getScheduledAmount(s._amount) > 0,
+                  ),
+                ),
+                expenses: calculateTotal(
+                  intervalSchedules.filter(
+                    s => getScheduledAmount(s._amount) < 0,
+                  ),
+                ),
+              });
+              _items.push(...intervalSchedules);
+            }
+          },
+        );
+      }
+    });
+
+    if (allowCompleted && hasCompletedSchedules) {
+      _items.push({ id: 'show-completed' });
     }
 
-    const hasCompletedSchedule = filteredSchedules.find(s => s.completed);
-
-    if (!hasCompletedSchedule) return unCompletedSchedules;
-
-    return [...unCompletedSchedules, { id: 'show-completed' }];
-  }, [filteredSchedules, showCompleted, allowCompleted]);
+    return _items;
+  }, [searchedSchedules, showCompleted, allowCompleted]);
 
   function renderSchedule({ schedule }: { schedule: ScheduleEntity }) {
     return (
@@ -333,6 +472,50 @@ export function SchedulesTable({
           >
             Show completed schedules
           </Field>
+        </Row>
+      );
+    } else if (isSubTotalItem(item)) {
+      const total = item.income + item.expenses;
+      return (
+        <Row
+          height={ROW_HEIGHT}
+          inset={15}
+          style={{
+            position: 'sticky',
+            top: 0,
+          }}
+        >
+          <Field
+            width="flex"
+            name="name"
+            style={{ fontSize: 14, fontWeight: 'bold' }}
+          >
+            <Text>{item.title}</Text>
+          </Field>
+          <Cell
+            plain
+            style={{
+              fontSize: 14,
+              fontWeight: 'medium',
+              textAlign: 'right',
+              flexDirection: 'row',
+              alignItems: 'center',
+              padding: '0 5px',
+              gap: '3px',
+            }}
+            name="amounts"
+          >
+            {item.income !== 0 && item.expenses !== 0 && (
+              <>
+                <FormattedAmount amount={item.income} />
+                <FormattedAmount amount={item.expenses} highlightExpense />
+                <span>=</span>
+              </>
+            )}
+            <FormattedAmount amount={total} highlightExpense />
+          </Cell>
+          {!minimal && <Field width={80} />}
+          {!minimal && <Field width={40} />}
         </Row>
       );
     }

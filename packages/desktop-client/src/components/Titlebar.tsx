@@ -7,32 +7,16 @@ import React, {
   type ReactNode,
 } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
-import * as Platform from 'loot-core/src/client/platform';
+import { EyeIcon, EyeOff, TriangleAlertIcon } from 'lucide-react';
+
 import * as queries from 'loot-core/src/client/queries';
 import { listen } from 'loot-core/src/platform/client/fetch';
 import { type LocalPrefs } from 'loot-core/src/types/prefs';
 
-import { useActions } from '../hooks/useActions';
-import { useFeatureFlag } from '../hooks/useFeatureFlag';
-import { useGlobalPref } from '../hooks/useGlobalPref';
-import { useLocalPref } from '../hooks/useLocalPref';
-import { useNavigate } from '../hooks/useNavigate';
-import { SvgArrowLeft } from '../icons/v1';
-import {
-  SvgAlertTriangle,
-  SvgNavigationMenu,
-  SvgViewHide,
-  SvgViewShow,
-} from '../icons/v2';
-import { useResponsive } from '../ResponsiveProvider';
-import { theme, type CSSProperties, styles } from '../style';
-
-import { AccountSyncCheck } from './accounts/AccountSyncCheck';
 import { AnimatedRefresh } from './AnimatedRefresh';
 import { MonthCountSelector } from './budget/MonthCountSelector';
-import { Button, ButtonWithLoading } from './common/Button';
 import { Link } from './common/Link';
 import { Paragraph } from './common/Paragraph';
 import { Popover } from './common/Popover';
@@ -42,7 +26,21 @@ import { LoggedInUser } from './LoggedInUser';
 import { useServerURL } from './ServerContext';
 import { useSidebar } from './sidebar/SidebarProvider';
 import { useSheetValue } from './spreadsheet/useSheetValue';
-import { ThemeSelector } from './ThemeSelector';
+
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useActions } from '@/hooks/useActions';
+import { useFeatureFlag } from '@/hooks/useFeatureFlag';
+import { useGlobalPref } from '@/hooks/useGlobalPref';
+import { useLocalPref } from '@/hooks/useLocalPref';
+import { useNavigate } from '@/hooks/useNavigate';
+import { useResponsive } from '@/ResponsiveProvider';
+import { theme } from '@/style';
 
 export const SWITCH_BUDGET_MESSAGE_TYPE = 'budget/switch-type';
 
@@ -113,37 +111,27 @@ function UncategorizedButton() {
   );
 }
 
-type PrivacyButtonProps = {
-  style?: CSSProperties;
-};
-
-function PrivacyButton({ style }: PrivacyButtonProps) {
+function PrivacyButton() {
   const [isPrivacyEnabled, setPrivacyEnabledPref] =
     useLocalPref('isPrivacyEnabled');
 
-  const privacyIconStyle = { width: 15, height: 15 };
-
   return (
-    <Button
-      type="bare"
-      aria-label={`${isPrivacyEnabled ? 'Disable' : 'Enable'} privacy mode`}
-      onClick={() => setPrivacyEnabledPref(!isPrivacyEnabled)}
-      style={style}
-    >
-      {isPrivacyEnabled ? (
-        <SvgViewHide style={privacyIconStyle} />
-      ) : (
-        <SvgViewShow style={privacyIconStyle} />
-      )}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger>
+        <Switch
+          checked={!isPrivacyEnabled}
+          onCheckedChange={checked => setPrivacyEnabledPref(!checked)}
+          Icon={isPrivacyEnabled ? EyeOff : EyeIcon}
+        />
+      </TooltipTrigger>
+      <TooltipContent>
+        {`${isPrivacyEnabled ? 'Disable' : 'Enable'} privacy mode`}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
-type SyncButtonProps = {
-  style?: CSSProperties;
-  isMobile?: boolean;
-};
-function SyncButton({ style, isMobile = false }: SyncButtonProps) {
+const SyncButton = () => {
   const [cloudFileId] = useLocalPref('cloudFileId');
   const { sync } = useActions();
 
@@ -185,51 +173,6 @@ function SyncButton({ style, isMobile = false }: SyncButtonProps) {
     return unlisten;
   }, []);
 
-  const mobileColor =
-    syncState === 'error'
-      ? theme.errorText
-      : syncState === 'disabled' ||
-          syncState === 'offline' ||
-          syncState === 'local'
-        ? theme.mobileHeaderTextSubdued
-        : theme.mobileHeaderText;
-  const desktopColor =
-    syncState === 'error'
-      ? theme.errorTextDark
-      : syncState === 'disabled' ||
-          syncState === 'offline' ||
-          syncState === 'local'
-        ? theme.tableTextLight
-        : 'inherit';
-
-  const activeStyle = isMobile
-    ? {
-        color: mobileColor,
-      }
-    : {};
-
-  const hoveredStyle = isMobile
-    ? {
-        color: mobileColor,
-        background: theme.mobileHeaderTextHover,
-      }
-    : {};
-
-  const mobileIconStyle = {
-    color: mobileColor,
-    justifyContent: 'center',
-    margin: 10,
-    paddingLeft: 5,
-    paddingRight: 3,
-  };
-
-  const mobileTextStyle = {
-    ...styles.text,
-    fontWeight: 500,
-    marginLeft: 2,
-    marginRight: 5,
-  };
-
   useHotkeys(
     'ctrl+s, cmd+s, meta+s',
     sync,
@@ -242,47 +185,26 @@ function SyncButton({ style, isMobile = false }: SyncButtonProps) {
   );
 
   return (
-    <Button
-      type="bare"
-      aria-label="Sync"
-      style={
-        isMobile
-          ? {
-              ...style,
-              WebkitAppRegion: 'none',
-              ...mobileIconStyle,
-            }
-          : {
-              ...style,
-              WebkitAppRegion: 'none',
-              color: desktopColor,
-            }
-      }
-      hoveredStyle={hoveredStyle}
-      activeStyle={activeStyle}
-      onClick={sync}
-    >
-      {isMobile ? (
-        syncState === 'error' ? (
-          <SvgAlertTriangle width={14} height={14} />
-        ) : (
-          <AnimatedRefresh width={18} height={18} animating={syncing} />
-        )
-      ) : syncState === 'error' ? (
-        <SvgAlertTriangle width={13} />
-      ) : (
-        <AnimatedRefresh animating={syncing} />
-      )}
-      <Text style={isMobile ? { ...mobileTextStyle } : { marginLeft: 3 }}>
+    <Tooltip>
+      <TooltipTrigger>
+        <Button variant="ghost" size="icon" onClick={sync}>
+          {syncState === 'error' ? (
+            <TriangleAlertIcon className="w-4 h-4" />
+          ) : (
+            <AnimatedRefresh animating={syncing} />
+          )}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
         {syncState === 'disabled'
           ? 'Disabled'
           : syncState === 'offline'
             ? 'Offline'
             : 'Sync'}
-      </Text>
-    </Button>
+      </TooltipContent>
+    </Tooltip>
   );
-}
+};
 
 function BudgetTitlebar() {
   const [maxMonths, setMaxMonthsPref] = useGlobalPref('maxMonths');
@@ -377,11 +299,7 @@ function BudgetTitlebar() {
   );
 }
 
-type TitlebarProps = {
-  style?: CSSProperties;
-};
-
-export function Titlebar({ style }: TitlebarProps) {
+export const Titlebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const sidebar = useSidebar();
@@ -390,78 +308,43 @@ export function Titlebar({ style }: TitlebarProps) {
   const [floatingSidebar] = useGlobalPref('floatingSidebar');
 
   return isNarrowWidth ? null : (
-    <View
+    <div
+      className="flex items-center h-[52px] px-4 gap-2 pointer-events-none [&_*]:pointer-events-auto"
       style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: '0 15px',
-        height: 36,
-        pointerEvents: 'none',
-        '& *': {
-          pointerEvents: 'auto',
-        },
-        ...(!Platform.isBrowser &&
-          Platform.OS === 'mac' &&
-          floatingSidebar && { paddingLeft: 80 }),
-        ...style,
+        // @ts-expect-error Unknown object key
+        '-webkit-app-region': 'drag',
       }}
     >
-      {(floatingSidebar || sidebar.alwaysFloats) && (
-        <Button
-          type="bare"
-          style={{ marginRight: 8 }}
-          onPointerEnter={e => {
-            if (e.pointerType === 'mouse') {
-              sidebar.setHidden(false);
-            }
-          }}
-          onPointerLeave={e => {
-            if (e.pointerType === 'mouse') {
-              sidebar.setHidden(true);
-            }
-          }}
-          onPointerUp={e => {
-            if (e.pointerType !== 'mouse') {
-              sidebar.setHidden(!sidebar.hidden);
-            }
-          }}
-        >
-          <SvgNavigationMenu
-            className="menu"
-            style={{ width: 15, height: 15, color: theme.pageText, left: 0 }}
-          />
-        </Button>
-      )}
+      <div id="titlebar-outlet" />
+      {/*<Routes>*/}
+      {/*  <Route*/}
+      {/*    path="/accounts"*/}
+      {/*    element={*/}
+      {/*      location.state?.goBack ? (*/}
+      {/*        <Button type="bare" onClick={() => navigate(-1)}>*/}
+      {/*          <SvgArrowLeft*/}
+      {/*            width={10}*/}
+      {/*            height={10}*/}
+      {/*            style={{ marginRight: 5, color: 'currentColor' }}*/}
+      {/*          />{' '}*/}
+      {/*          Back*/}
+      {/*        </Button>*/}
+      {/*      ) : null*/}
+      {/*    }*/}
+      {/*  />*/}
 
-      <Routes>
-        <Route
-          path="/accounts"
-          element={
-            location.state?.goBack ? (
-              <Button type="bare" onClick={() => navigate(-1)}>
-                <SvgArrowLeft
-                  width={10}
-                  height={10}
-                  style={{ marginRight: 5, color: 'currentColor' }}
-                />{' '}
-                Back
-              </Button>
-            ) : null
-          }
-        />
+      {/*  <Route path="/accounts/:id" element={<AccountSyncCheck />} />*/}
 
-        <Route path="/accounts/:id" element={<AccountSyncCheck />} />
+      {/*  <Route path="/budget" element={<BudgetTitlebar />} />*/}
 
-        <Route path="/budget" element={<BudgetTitlebar />} />
-
-        <Route path="*" element={null} />
-      </Routes>
-      <View style={{ flex: 1 }} />
-      <UncategorizedButton />
-      <ThemeSelector style={{ marginLeft: 10 }} />
-      <PrivacyButton style={{ marginLeft: 10 }} />
-      {serverURL ? <SyncButton style={{ marginLeft: 10 }} /> : null}
-      <LoggedInUser style={{ marginLeft: 10 }} />
-    </View>
+      {/*  <Route path="*" element={null} />*/}
+      {/*</Routes>*/}
+      <div className="flex-1" />
+      {/*<UncategorizedButton />*/}
+      {/*<ThemeSelector style={{ marginLeft: 10 }} />*/}
+      <PrivacyButton />
+      {serverURL ? <SyncButton /> : null}
+      <LoggedInUser />
+    </div>
   );
-}
+};

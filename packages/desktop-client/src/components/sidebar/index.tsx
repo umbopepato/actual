@@ -4,7 +4,7 @@ import { useGlobalPref } from '../../hooks/useGlobalPref';
 import { useResponsive } from '../../ResponsiveProvider';
 import { View } from '../common/View';
 
-import { SIDEBAR_WIDTH, Sidebar } from './Sidebar';
+import { SIDEBAR_WIDTH, SidebarNavigation } from './SidebarNavigation';
 import { useSidebar } from './SidebarProvider';
 
 export function FloatableSidebar() {
@@ -50,7 +50,7 @@ export function FloatableSidebar() {
           'transform .5s, box-shadow .5s, border-radius .5s, bottom .5s',
       }}
     >
-      <Sidebar />
+      <SidebarNavigation />
     </View>
   );
 }

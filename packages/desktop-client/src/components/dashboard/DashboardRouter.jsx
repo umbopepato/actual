@@ -6,7 +6,7 @@ import { CashFlow } from './reports/CashFlow';
 import { CustomReport } from './reports/CustomReport';
 import { NetWorth } from './reports/NetWorth';
 
-export function ReportRouter() {
+export function DashboardRouter() {
   return (
     <Routes>
       <Route path="/" element={<Overview />} />

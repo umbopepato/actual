@@ -5,8 +5,6 @@ import React, {
   useRef,
 } from 'react';
 
-import { css } from 'glamor';
-
 import { useMergedRefs } from '../../hooks/useMergedRefs';
 import { useProperFocus } from '../../hooks/useProperFocus';
 import { type CSSProperties, styles, theme } from '../../style';
@@ -32,7 +30,6 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
 };
 
 export function Input({
-  style,
   inputRef,
   onEnter,
   onEscape,
@@ -49,21 +46,21 @@ export function Input({
   return (
     <input
       ref={mergedRef}
-      className={`${css(
-        defaultInputStyle,
-        {
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          flexShrink: 0,
-          ':focus': {
-            border: '1px solid ' + theme.formInputBorderSelected,
-            boxShadow: '0 1px 1px ' + theme.formInputShadowSelected,
-          },
-          '::placeholder': { color: theme.formInputTextPlaceholder },
-        },
-        styles.smallText,
-        style,
-      )}`}
+      // className={`${css(
+      //   defaultInputStyle,
+      //   {
+      //     whiteSpace: 'nowrap',
+      //     overflow: 'hidden',
+      //     flexShrink: 0,
+      //     ':focus': {
+      //       border: '1px solid ' + theme.formInputBorderSelected,
+      //       boxShadow: '0 1px 1px ' + theme.formInputShadowSelected,
+      //     },
+      //     '::placeholder': { color: theme.formInputTextPlaceholder },
+      //   },
+      //   styles.smallText,
+      //   style,
+      // )}`}
       {...nativeProps}
       onKeyDown={e => {
         if (e.key === 'Enter' && onEnter) {

@@ -1,5 +1,9 @@
 // @ts-strict-ignore
-import React, { type ComponentProps, type ReactNode } from 'react';
+import React, {
+  type ComponentProps,
+  type HTMLAttributes,
+  type ReactNode,
+} from 'react';
 
 import { type CSSProperties, styles } from '../../style';
 import { Text } from '../common/Text';
@@ -21,7 +25,7 @@ type CellValueProps = {
     typeof ConditionalPrivacyFilter
   >['privacyFilter'];
   ['data-testid']?: string;
-};
+} & HTMLAttributes<HTMLDivElement>;
 
 export function CellValue({
   binding,

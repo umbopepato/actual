@@ -5,32 +5,28 @@ import React, {
 } from 'react';
 import { NavLink, useMatch } from 'react-router-dom';
 
-import { css } from 'glamor';
-
 import { type CustomReportEntity } from 'loot-core/types/models/reports';
 
-import { useNavigate } from '../../hooks/useNavigate';
-import { type CSSProperties, styles } from '../../style';
-import { theme } from '../../style/theme';
-
-import { Button } from './Button';
 import { Text } from './Text';
 
+import { Button } from '@/components/ui/button';
+import { useNavigate } from '@/hooks/useNavigate';
+import { theme } from '@/style';
+import { cn } from '@/util/ui';
+
 type TextLinkProps = {
-  style?: CSSProperties;
   onClick?: MouseEventHandler;
   children?: ReactNode;
 };
 
 type ButtonLinkProps = ComponentProps<typeof Button> & {
   to?: string;
-  activeStyle?: CSSProperties;
+  activeClass?: string;
 };
 
 type InternalLinkProps = {
   to?: string;
-  style?: CSSProperties;
-  activeStyle?: CSSProperties;
+  activeClass?: string;
   children?: ReactNode;
   report?: CustomReportEntity;
 };
@@ -51,11 +47,13 @@ const ExternalLink = ({
   children,
   to,
   linkColor = 'blue',
+  ...props
 }: ExternalLinkProps) => {
   return (
     // we can’t use <ExternalLink /> here for obvious reasons
     // eslint-disable-next-line no-restricted-syntax
     <a
+      {...props}
       href={to ?? ''}
       target="_blank"
       rel="noopener noreferrer"
@@ -66,40 +64,27 @@ const ExternalLink = ({
   );
 };
 
-const TextLink = ({ style, onClick, children, ...props }: TextLinkProps) => {
+const TextLink = ({ onClick, children, ...props }: TextLinkProps) => {
   return (
-    <Text
-      style={{
-        backgroundColor: 'transparent',
-        display: 'inline',
-        border: 0,
-        cursor: 'pointer',
-        ':hover': {
-          textDecoration: 'underline',
-          boxShadow: 'none',
-        },
-        ...style,
-      }}
-      {...props}
-      onClick={onClick}
-    >
+    <Text {...props} onClick={onClick}>
       {children}
     </Text>
   );
 };
 
-const ButtonLink = ({ to, style, activeStyle, ...props }: ButtonLinkProps) => {
+const ButtonLink = ({
+  to,
+  className,
+  activeClass,
+  ...props
+}: ButtonLinkProps) => {
   const navigate = useNavigate();
   const path = to ?? '';
   const match = useMatch({ path });
   return (
     <Button
-      style={{
-        ...style,
-        ...(match ? activeStyle : {}),
-      }}
-      activeStyle={activeStyle}
       {...props}
+      className={cn(className, match && activeClass)}
       onClick={e => {
         props.onClick?.(e);
         if (!e.defaultPrevented) {
@@ -112,23 +97,21 @@ const ButtonLink = ({ to, style, activeStyle, ...props }: ButtonLinkProps) => {
 
 const InternalLink = ({
   to,
-  style,
-  activeStyle,
+  activeClass,
   children,
   report,
+  className,
+  ...props
 }: InternalLinkProps) => {
   const path = to ?? '';
   const match = useMatch({ path });
 
   return (
     <NavLink
+      {...props}
       to={path}
+      className={cn(className, match && activeClass)}
       state={report ? { report } : {}}
-      className={`${css([
-        styles.smallText,
-        style,
-        match ? activeStyle : null,
-      ])}`}
     >
       {children}
     </NavLink>

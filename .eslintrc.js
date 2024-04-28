@@ -34,7 +34,13 @@ const restrictedImportColors = [
 ];
 
 module.exports = {
-  plugins: ['prettier', 'import', 'rulesdir', '@typescript-eslint'],
+  plugins: [
+    'prettier',
+    'import',
+    'rulesdir',
+    '@typescript-eslint',
+    'unused-imports',
+  ],
   extends: [
     'react-app',
     'plugin:react/recommended',
@@ -198,6 +204,19 @@ module.exports = {
               FC: { message: ruleFCMsg },
             },
             extendDefaults: true,
+          },
+        ],
+        'no-unused-vars': 'off',
+        'react/jsx-uses-react': 'error',
+        'react/jsx-uses-vars': 'error',
+        'unused-imports/no-unused-imports': 'error',
+        'unused-imports/no-unused-vars': [
+          'warn',
+          {
+            vars: 'all',
+            varsIgnorePattern: '^_',
+            args: 'after-used',
+            argsIgnorePattern: '^_',
           },
         ],
       },

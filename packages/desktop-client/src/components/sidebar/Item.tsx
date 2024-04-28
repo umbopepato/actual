@@ -1,22 +1,14 @@
 // @ts-strict-ignore
-import React, {
-  type ComponentType,
-  type MouseEventHandler,
-  type ReactNode,
-  type SVGProps,
-} from 'react';
+import { type MouseEventHandler, type ReactNode } from 'react';
 
-import { styles, theme, type CSSProperties } from '../../style';
-import { Block } from '../common/Block';
-import { View } from '../common/View';
+import { type LucideIcon } from 'lucide-react';
 
-import { ItemContent } from './ItemContent';
+import { type CSSProperties } from '../../style';
+import { Link } from '../common/Link';
 
 type ItemProps = {
   title: string;
-  Icon:
-    | ComponentType<SVGProps<SVGElement>>
-    | ComponentType<SVGProps<SVGSVGElement>>;
+  Icon: LucideIcon;
   to?: string;
   children?: ReactNode;
   style?: CSSProperties;
@@ -27,60 +19,23 @@ type ItemProps = {
 };
 
 export function Item({
-  children,
   Icon,
   title,
-  style,
   to,
   onClick,
-  indent = 0,
   forceHover = false,
   forceActive = false,
 }: ItemProps) {
-  const hoverStyle = {
-    backgroundColor: theme.sidebarItemBackgroundHover,
-  };
-
-  const content = (
-    <View
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        height: 20,
-      }}
-    >
-      <Icon width={15} height={15} />
-      <Block style={{ marginLeft: 8 }}>{title}</Block>
-      <View style={{ flex: 1 }} />
-    </View>
-  );
-
+  const Component = onClick ? 'div' : Link;
   return (
-    <View style={{ flexShrink: 0, ...style }}>
-      <ItemContent
-        style={{
-          ...styles.mediumText,
-          paddingTop: 9,
-          paddingBottom: 9,
-          paddingLeft: 19 + indent,
-          paddingRight: 10,
-          textDecoration: 'none',
-          color: theme.sidebarItemText,
-          ...(forceHover ? hoverStyle : {}),
-          ':hover': hoverStyle,
-        }}
-        to={to}
-        onClick={onClick}
-        activeStyle={{
-          borderLeft: '4px solid ' + theme.sidebarItemTextSelected,
-          paddingLeft: 19 + indent - 4,
-          color: theme.sidebarItemTextSelected,
-        }}
-        forceActive={forceActive}
-      >
-        {content}
-      </ItemContent>
-      {children ? <View style={{ marginTop: 5 }}>{children}</View> : null}
-    </View>
+    <Component
+      to={to}
+      onClick={onClick}
+      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${onClick ? 'cursor-pointer' : ''}`}
+      {...(Component === Link ? { activeClass: 'bg-muted text-primary' } : {})}
+    >
+      <Icon className="h-4 w-4" />
+      {title}
+    </Component>
   );
 }

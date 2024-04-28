@@ -2,11 +2,11 @@
 import React from 'react';
 
 import { css } from 'glamor';
+import { type LucideIcon } from 'lucide-react';
 
 import { type AccountEntity } from 'loot-core/src/types/models';
 
 import { styles, theme, type CSSProperties } from '../../style';
-import { AlignedText } from '../common/AlignedText';
 import { Link } from '../common/Link';
 import { View } from '../common/View';
 import {
@@ -35,7 +35,7 @@ export const accountNameStyle: CSSProperties = {
 type AccountProps = {
   name: string;
   to: string;
-  query: Binding;
+  query?: Binding;
   account?: AccountEntity;
   connected?: boolean;
   pending?: boolean;
@@ -45,6 +45,7 @@ type AccountProps = {
   outerStyle?: CSSProperties;
   onDragChange?: OnDragChangeCallback<{ id: string }>;
   onDrop?: OnDropCallback;
+  Icon?: LucideIcon;
 };
 
 export function Account({
@@ -60,6 +61,7 @@ export function Account({
   outerStyle,
   onDragChange,
   onDrop,
+  Icon,
 }: AccountProps) {
   const type = account
     ? account.closed
@@ -89,60 +91,52 @@ export function Account({
         <View innerRef={dragRef}>
           <Link
             to={to}
-            style={{
-              ...accountNameStyle,
-              ...style,
-              position: 'relative',
-              borderLeft: '4px solid transparent',
-              ...(updated && { fontWeight: 700 }),
-            }}
-            activeStyle={{
-              borderColor: theme.sidebarItemAccentSelected,
-              color: theme.sidebarItemTextSelected,
-              // This is kind of a hack, but we don't ever want the account
-              // that the user is looking at to be "bolded" which means it
-              // has unread transactions. The system does mark is read and
-              // unbolds it, but it still "flashes" bold so this just
-              // ignores it if it's active
-              fontWeight: (style && style.fontWeight) || 'normal',
-              '& .dot': {
-                backgroundColor: theme.sidebarItemAccentSelected,
-                transform: 'translateX(-4.5px)',
-              },
-            }}
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+            activeClass="bg-muted text-primary"
+            // style={{
+            //   ...accountNameStyle,
+            //   ...style,
+            //   position: 'relative',
+            //   borderLeft: '4px solid transparent',
+            //   ...(updated && { fontWeight: 700 }),
+            // }}
+            // activeStyle={{
+            //   borderColor: theme.sidebarItemAccentSelected,
+            //   color: theme.sidebarItemTextSelected,
+            //   // This is kind of a hack, but we don't ever want the account
+            //   // that the user is looking at to be "bolded" which means it
+            //   // has unread transactions. The system does mark is read and
+            //   // unbolds it, but it still "flashes" bold so this just
+            //   // ignores it if it's active
+            //   fontWeight: (style && style.fontWeight) || 'normal',
+            //   '& .dot': {
+            //     backgroundColor: theme.sidebarItemAccentSelected,
+            //     transform: 'translateX(-4.5px)',
+            //   },
+            // }}
           >
-            <View
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                bottom: 0,
-                flexDirection: 'row',
-                alignItems: 'center',
-              }}
-            >
+            {Icon ? (
+              <Icon className="w-4 h-4" />
+            ) : (
               <div
-                className={`dot ${css({
-                  marginRight: 3,
-                  width: 5,
-                  height: 5,
-                  borderRadius: 5,
+                className={`dot m-1 w-2 h-2 rounded ${css({
                   backgroundColor: pending
                     ? theme.sidebarItemBackgroundPending
                     : failed
                       ? theme.sidebarItemBackgroundFailed
                       : theme.sidebarItemBackgroundPositive,
-                  marginLeft: 2,
-                  transition: 'transform .3s',
                   opacity: connected ? 1 : 0,
                 })}`}
               />
-            </View>
+            )}
 
-            <AlignedText
-              left={name}
-              right={<CellValue binding={query} type="financial" />}
-            />
+            {name}
+
+            {query && (
+              <span className="ml-auto text-xs">
+                <CellValue binding={query} type="financial" />
+              </span>
+            )}
           </Link>
         </View>
       </View>

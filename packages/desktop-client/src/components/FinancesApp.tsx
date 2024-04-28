@@ -28,6 +28,7 @@ import { getIsOutdated, getLatestVersion } from '../util/versions';
 import { BankSyncStatus } from './BankSyncStatus';
 import { BudgetMonthCountProvider } from './budget/BudgetMonthCountContext';
 import { View } from './common/View';
+import { DashboardRouterLazy } from './dashboard';
 import { GlobalKeys } from './GlobalKeys';
 import { ManageRulesPage } from './ManageRulesPage';
 import { Category } from './mobile/budget/Category';
@@ -36,13 +37,22 @@ import { TransactionEdit } from './mobile/transactions/TransactionEdit';
 import { Modals } from './Modals';
 import { Notifications } from './Notifications';
 import { ManagePayeesPage } from './payees/ManagePayeesPage';
-import { Reports } from './reports';
 import { NarrowAlternate, WideComponent } from './responsive';
 import { ScrollProvider } from './ScrollProvider';
 import { Settings } from './settings';
-import { FloatableSidebar } from './sidebar';
 import { SidebarProvider } from './sidebar/SidebarProvider';
 import { Titlebar, TitlebarProvider } from './Titlebar';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from './ui/resizable';
+
+import {
+  BudgetMenu,
+  SidebarNavigation,
+} from '@/components/sidebar/SidebarNavigation';
+import { Separator } from '@/components/ui/separator';
 
 function NarrowNotSupported({
   redirectTo = '/budget',
@@ -97,6 +107,7 @@ function RouterBehaviors() {
 
 function FinancesAppWithoutContext() {
   const actions = useActions();
+
   useEffect(() => {
     // Wait a little bit to make sure the sync button will get the
     // sync start event. This can be improved later.
@@ -118,52 +129,53 @@ function FinancesAppWithoutContext() {
       <RouterBehaviors />
       <ExposeNavigate />
 
-      <View style={{ height: '100%' }}>
-        <GlobalKeys />
-
-        <View
-          style={{
-            flexDirection: 'row',
-            backgroundColor: theme.pageBackground,
-            flex: 1,
+      <div className="h-screen">
+        <ResizablePanelGroup
+          direction="horizontal"
+          onLayout={(sizes: number[]) => {
+            localStorage.setItem(
+              `react-resizable-panels:layout`,
+              JSON.stringify(sizes),
+            );
           }}
+          className="h-full items-stretch"
         >
-          <FloatableSidebar />
-
-          <View
-            style={{
-              color: theme.pageText,
-              backgroundColor: theme.pageBackground,
-              flex: 1,
-              overflow: 'hidden',
-              width: '100%',
-            }}
+          <ResizablePanel
+            defaultSize={20}
+            collapsible={false}
+            minSize={15}
+            maxSize={35}
+            className="hidden md:flex flex-col min-w-[50px] transition-all duration-300 ease-in-out"
           >
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                overflow: 'auto',
-                position: 'relative',
-              }}
-            >
-              <Titlebar
-                style={{
-                  WebkitAppRegion: 'drag',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  zIndex: 1000,
-                }}
-              />
+            <div className="flex h-[52px] items-center justify-center px-2">
+              <BudgetMenu />
+            </div>
+
+            <Separator />
+
+            <div className="flex-1 overflow-y-auto">
+              <SidebarNavigation />
+            </div>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle className="hidden md:flex" />
+
+          <ResizablePanel minSize={30}>
+            <Titlebar />
+
+            <Separator />
+
+            <main className="relative pt-14">
               <Notifications />
               <BankSyncStatus />
 
               <Routes>
-                <Route path="/" element={<Navigate to="/budget" replace />} />
+                <Route
+                  path="/"
+                  element={<Navigate to="/dashboard" replace />}
+                />
 
-                <Route path="/reports/*" element={<Reports />} />
+                <Route path="/dashboard/*" element={<DashboardRouterLazy />} />
 
                 <Route
                   path="/budget"
@@ -172,11 +184,7 @@ function FinancesAppWithoutContext() {
 
                 <Route
                   path="/schedules"
-                  element={
-                    <NarrowNotSupported>
-                      <WideComponent name="Schedules" />
-                    </NarrowNotSupported>
-                  }
+                  element={<WideComponent name="Schedules" />}
                 />
 
                 <Route path="/payees" element={<ManagePayeesPage />} />
@@ -185,58 +193,46 @@ function FinancesAppWithoutContext() {
 
                 <Route
                   path="/gocardless/link"
-                  element={
-                    <NarrowNotSupported>
-                      <WideComponent name="GoCardlessLink" />
-                    </NarrowNotSupported>
-                  }
+                  element={<WideComponent name="GoCardlessLink" />}
                 />
 
                 <Route
                   path="/accounts"
-                  element={<NarrowAlternate name="Accounts" />}
+                  element={<WideComponent name="Accounts" />}
                 />
 
                 <Route
                   path="/accounts/:id"
-                  element={<NarrowAlternate name="Account" />}
+                  element={<WideComponent name="Account" />}
                 />
 
                 <Route
                   path="/transactions/:transactionId"
-                  element={
-                    <WideNotSupported>
-                      <TransactionEdit />
-                    </WideNotSupported>
-                  }
+                  element={<TransactionEdit />}
                 />
 
+                <Route path="/categories/:id" element={<Category />} />
+
+                {/* redirect all other traffic to the dashboard page */}
                 <Route
-                  path="/categories/:id"
-                  element={
-                    <WideNotSupported>
-                      <Category />
-                    </WideNotSupported>
-                  }
+                  path="/*"
+                  element={<Navigate to="/dashboard" replace />}
                 />
-
-                {/* redirect all other traffic to the budget page */}
-                <Route path="/*" element={<Navigate to="/budget" replace />} />
               </Routes>
 
               <Modals />
-            </div>
 
-            <Routes>
+              {/*<Routes>
               <Route path="/budget" element={<MobileNavTabs />} />
               <Route path="/accounts" element={<MobileNavTabs />} />
               <Route path="/settings" element={<MobileNavTabs />} />
-              <Route path="/reports" element={<MobileNavTabs />} />
+              <Route path="/dashboard" element={<MobileNavTabs />} />
               <Route path="*" element={null} />
-            </Routes>
-          </View>
-        </View>
-      </View>
+            </Routes>*/}
+            </main>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
     </BrowserRouter>
   );
 }
@@ -258,3 +254,122 @@ export function FinancesApp() {
     </SpreadsheetProvider>
   );
 }
+
+const tmp = () => (
+  <View style={{ height: '100%' }}>
+    <GlobalKeys />
+
+    <View
+      style={{
+        flexDirection: 'row',
+        backgroundColor: theme.pageBackground,
+        flex: 1,
+      }}
+    >
+      <SidebarNavigation />
+
+      <View
+        style={{
+          color: theme.pageText,
+          backgroundColor: theme.pageBackground,
+          flex: 1,
+          overflow: 'hidden',
+          width: '100%',
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            overflow: 'auto',
+            position: 'relative',
+          }}
+        >
+          <Titlebar
+            style={{
+              WebkitAppRegion: 'drag',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: 1000,
+            }}
+          />
+          <Notifications />
+          <BankSyncStatus />
+
+          <Routes>
+            <Route path="/" element={<Navigate to="/budget" replace />} />
+
+            <Route path="/dashboard/*" element={<DashboardRouterLazy />} />
+
+            <Route path="/budget" element={<NarrowAlternate name="Budget" />} />
+
+            <Route
+              path="/schedules"
+              element={
+                <NarrowNotSupported>
+                  <WideComponent name="Schedules" />
+                </NarrowNotSupported>
+              }
+            />
+
+            <Route path="/payees" element={<ManagePayeesPage />} />
+            <Route path="/rules" element={<ManageRulesPage />} />
+            <Route path="/settings" element={<Settings />} />
+
+            <Route
+              path="/gocardless/link"
+              element={
+                <NarrowNotSupported>
+                  <WideComponent name="GoCardlessLink" />
+                </NarrowNotSupported>
+              }
+            />
+
+            <Route
+              path="/accounts"
+              element={<NarrowAlternate name="Accounts" />}
+            />
+
+            <Route
+              path="/accounts/:id"
+              element={<NarrowAlternate name="Account" />}
+            />
+
+            <Route
+              path="/transactions/:transactionId"
+              element={
+                <WideNotSupported>
+                  <TransactionEdit />
+                </WideNotSupported>
+              }
+            />
+
+            <Route
+              path="/categories/:id"
+              element={
+                <WideNotSupported>
+                  <Category />
+                </WideNotSupported>
+              }
+            />
+
+            {/* redirect all other traffic to the budget page */}
+            <Route path="/*" element={<Navigate to="/budget" replace />} />
+          </Routes>
+
+          <Modals />
+        </div>
+
+        <Routes>
+          <Route path="/budget" element={<MobileNavTabs />} />
+          <Route path="/accounts" element={<MobileNavTabs />} />
+          <Route path="/settings" element={<MobileNavTabs />} />
+          <Route path="/dashboard" element={<MobileNavTabs />} />
+          <Route path="*" element={null} />
+        </Routes>
+      </View>
+    </View>
+  </View>
+);

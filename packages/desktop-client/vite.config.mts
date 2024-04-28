@@ -146,6 +146,9 @@ export default defineConfig(async ({ mode }) => {
     },
     resolve: {
       extensions: resolveExtensions,
+      alias: {
+        "@": path.resolve(__dirname, 'src'),
+      },
     },
     plugins: [
       VitePWA({

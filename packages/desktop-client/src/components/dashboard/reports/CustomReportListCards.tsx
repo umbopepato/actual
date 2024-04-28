@@ -192,7 +192,7 @@ export function CustomReportListCards({
                 }
               >
                 <View style={{ width: '100%', height: '100%' }}>
-                  <ReportCard to="/reports/custom" report={report}>
+                  <ReportCard to="/dashboard/custom" report={report}>
                     <View
                       style={{ flex: 1, padding: 10 }}
                       onMouseEnter={() =>

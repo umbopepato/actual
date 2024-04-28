@@ -45,6 +45,9 @@ import { TransactionList } from '../transactions/TransactionList';
 
 import { AccountHeader } from './Header';
 
+import { TransactionsControls } from '@/components/accounts/TransactionsControls';
+import { TitlebarOutlet } from '@/components/TitlebarOutlet';
+
 function EmptyMessage({ onAdd }) {
   return (
     <View
@@ -1516,62 +1519,71 @@ class AccountInternal extends PureComponent {
             registerDispatch={dispatch => (this.dispatchSelected = dispatch)}
             selectAllFilter={item => !item._unmatched && !item.is_parent}
           >
-            <View style={styles.page}>
+            <TitlebarOutlet>
               <AccountHeader
-                tableRef={this.table}
-                editingName={editingName}
-                isNameEditable={isNameEditable}
-                workingHard={workingHard}
                 account={account}
-                filterId={filterId}
-                filtersList={this.props.filtersList}
-                location={this.props.location}
                 accountName={accountName}
                 accountsSyncing={accountsSyncing}
+                balanceQuery={balanceQuery}
+                editingName={editingName}
                 failedAccounts={failedAccounts}
-                accounts={accounts}
-                transactions={transactions}
-                showBalances={showBalances}
+                filters={this.state.filters}
+                isNameEditable={isNameEditable}
+                onExposeName={this.onExposeName}
+                onSaveName={this.onSaveName}
+                onToggleExtraBalances={this.onToggleExtraBalances}
                 showExtraBalances={showExtraBalances}
-                showCleared={showCleared}
-                showReconciled={showReconciled}
-                showEmptyMessage={showEmptyMessage}
+                transactions={transactions}
+              />
+            </TitlebarOutlet>
+            <View style={styles.page}>
+              <TransactionsControls
+                account={account}
+                accountName={accountName}
+                accounts={accounts}
                 balanceQuery={balanceQuery}
                 canCalculateBalance={this.canCalculateBalance}
-                isSorted={this.state.sort.length !== 0}
-                reconcileAmount={reconcileAmount}
-                search={this.state.search}
-                filters={this.state.filters}
                 conditionsOp={this.state.conditionsOp}
-                savePrefs={this.props.savePrefs}
-                pushModal={this.props.pushModal}
-                onSearch={this.onSearch}
-                onShowTransactions={this.onShowTransactions}
-                onMenuSelect={this.onMenuSelect}
+                filterId={filterId}
+                filters={this.state.filters}
+                filtersList={this.props.filtersList}
+                isSorted={this.state.sort.length !== 0}
+                location={this.props.location}
                 onAddTransaction={this.onAddTransaction}
-                onToggleExtraBalances={this.onToggleExtraBalances}
-                onSaveName={this.onSaveName}
-                onExposeName={this.onExposeName}
-                onReconcile={this.onReconcile}
-                onDoneReconciling={this.onDoneReconciling}
-                onCreateReconciliationTransaction={
-                  this.onCreateReconciliationTransaction
-                }
-                onSync={this.onSync}
-                onImport={this.onImport}
+                onApplyFilter={this.onApplyFilter}
                 onBatchDelete={this.onBatchDelete}
                 onBatchDuplicate={this.onBatchDuplicate}
                 onBatchEdit={this.onBatchEdit}
                 onBatchUnlink={this.onBatchUnlink}
-                onCreateRule={this.onCreateRule}
-                onUpdateFilter={this.onUpdateFilter}
                 onClearFilters={this.onClearFilters}
-                onReloadSavedFilter={this.onReloadSavedFilter}
                 onCondOpChange={this.onCondOpChange}
+                onCreateReconciliationTransaction={
+                  this.onCreateReconciliationTransaction
+                }
+                onCreateRule={this.onCreateRule}
                 onDeleteFilter={this.onDeleteFilter}
-                onApplyFilter={this.onApplyFilter}
+                onDoneReconciling={this.onDoneReconciling}
+                onImport={this.onImport}
+                onMenuSelect={this.onMenuSelect}
+                onReconcile={this.onReconcile}
+                onReloadSavedFilter={this.onReloadSavedFilter}
                 onScheduleAction={this.onScheduleAction}
+                onSearch={this.onSearch}
                 onSetTransfer={this.onSetTransfer}
+                onShowTransactions={this.onShowTransactions}
+                onSync={this.onSync}
+                onUpdateFilter={this.onUpdateFilter}
+                pushModal={this.props.pushModal}
+                reconcileAmount={reconcileAmount}
+                savePrefs={this.props.savePrefs}
+                search={this.state.search}
+                showBalances={showBalances}
+                showCleared={showCleared}
+                showEmptyMessage={showEmptyMessage}
+                showReconciled={showReconciled}
+                tableRef={this.table}
+                transactions={transactions}
+                workingHard={workingHard}
               />
 
               <View style={{ flex: 1 }}>
@@ -1661,7 +1673,7 @@ function AccountHack(props) {
   );
 }
 
-export function Account() {
+export const Account = () => {
   const params = useParams();
   const location = useLocation();
 
@@ -1758,4 +1770,4 @@ export function Account() {
       </SplitsExpandedProvider>
     </SchedulesProvider>
   );
-}
+};
